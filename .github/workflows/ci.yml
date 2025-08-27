@@ -1,41 +1,36 @@
-# A descriptive name for your workflow, which will appear in the GitHub Actions tab.
 name: Python Application CI
 
-# This section defines the triggers for the workflow.
 on:
   push:
-    branches: [ "main" ] # Runs on every push to the 'main' branch.
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ] # Runs on every pull request targeting the 'main' branch.
+    branches: [ "main" ]
 
-# This section defines the jobs that the workflow will run.
 jobs:
-  # We have a single job called 'build'. You can name it anything.
   build:
-    # The type of runner that the job will run on. 'ubuntu-latest' is a standard, reliable choice.
     runs-on: ubuntu-latest
 
-    # 'steps' are a sequence of tasks that will be executed as part of the job.
+    # --- THIS IS THE NEW PART ---
+    # Make the GitHub secrets available as environment variables to all steps in this job
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+
     steps:
-    # Step 1: Check out your repository's code so the workflow can access it.
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Step 2: Set up a specific version of Python.
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
         python-version: "3.11"
 
-    # Step 3: Install dependencies. It's a good practice to upgrade pip first.
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -e .
     
-    # Step 4: Run the tests using pytest.
-    # The workflow will fail at this step if any test fails.
     - name: Run tests with pytest
       run: |
         pytest
