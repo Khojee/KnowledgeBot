@@ -1,0 +1,6 @@
+python-telegram-bot
+google-generativeai
+chromadb
+python-dotenv
+langdetect
+pytest

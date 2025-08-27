@@ -1,0 +1,20 @@
+# Git stuff
+.git
+.gitignore
+
+# Python cache and virtual environments
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Environment file (NEVER include secrets in your image)
+.env
+
+# Vector DB data
+chroma_db/
+
+# IDE and OS specific files
+.idea/
+.vscode/
+*.DS_Store
