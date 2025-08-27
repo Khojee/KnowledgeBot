@@ -39,12 +39,13 @@ def make_rag_prompt(question: str, relevant_passages: list[str], language_code: 
     language_name = language_map.get(language_code, 'the user\'s language')
 
     escaped_passages = [passage.replace("'", "").replace('"', "").replace("\n", " ") for passage in relevant_passages]
+    formatted_passages = "\n- ".join(escaped_passages)
     
     prompt = (f"You are a helpful IT support bot. Answer the user's QUESTION based ONLY on the PROVIDED INFORMATION. "
               f"If the information doesn't contain the answer, say you don't have information on that topic. "
               f"VERY IMPORTANT: You MUST write your entire response in {language_name}.\n\n"
               "PROVIDED INFORMATION:\n"
-              f"- {'\n- '.join(escaped_passages)}\n\n"
+              f"- {formatted_passages}\n\n"
               "QUESTION:\n"
               f"'{question}'")
     return prompt
