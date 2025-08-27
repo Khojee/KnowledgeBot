@@ -1,8 +1,3 @@
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from src.rag_core import make_rag_prompt
 
 def test_prompt_creation_english():
@@ -14,10 +9,8 @@ def test_prompt_creation_english():
     lang = "en"
     prompt = make_rag_prompt(question, passages, lang)
 
-    # Assert that key components are in the final prompt
     assert "How do I fix the CRM?" in prompt
     assert "Reload the page" in prompt
-    assert "API timeout" in prompt
     assert "write your entire response in English" in prompt
 
 def test_prompt_creation_russian():

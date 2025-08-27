@@ -32,6 +32,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install -e .
     
     # Step 4: Run the tests using pytest.
     # The workflow will fail at this step if any test fails.
