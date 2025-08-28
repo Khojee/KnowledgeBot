@@ -13,3 +13,6 @@ chroma_db/
 # IDE
 .idea/
 .vscode/
+
+# Local Knowledge Base with sensitive data
+knowledge_base/

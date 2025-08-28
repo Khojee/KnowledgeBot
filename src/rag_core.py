@@ -6,7 +6,7 @@ from .config import GEMINI_API_KEY, CHROMA_DB_PATH, COLLECTION_NAME, N_RESULTS_F
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Setup for Chat Model
-generation_model = genai.GenerativeModel('gemini-pro')
+generation_model = genai.GenerativeModel('gemini-2.5-flash')
 
 # Setup for Vector DB Client
 client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
