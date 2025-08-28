@@ -16,3 +16,5 @@ chroma_db/
 
 # Local Knowledge Base with sensitive data
 knowledge_base/
+
+bot_database.db
