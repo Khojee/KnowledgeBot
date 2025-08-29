@@ -30,24 +30,6 @@ def init_db():
         conn.commit()
     logging.info("Database initialized successfully.")
 
-def get_chat_history(chat_id: int) -> list:
-    """Retrieves chat history for a given chat_id."""
-    with sqlite3.connect(DATABASE_FILE) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT history FROM chat_history WHERE chat_id = ?", (chat_id,))
-        result = cursor.fetchone()
-        return json.loads(result[0]) if result else []
-
-def save_chat_history(chat_id: int, history: list):
-    """Saves or updates the chat history for a given chat_id."""
-    with sqlite3.connect(DATABASE_FILE) as conn:
-        cursor = conn.cursor()
-        # Use INSERT OR REPLACE to handle both new and existing users
-        cursor.execute("""
-            INSERT OR REPLACE INTO chat_history (chat_id, history)
-            VALUES (?, ?)
-        """, (chat_id, json.dumps(history)))
-        conn.commit()
 
 def log_interaction(interaction_id: str, chat_id: int, question: str, answer: str):
     """Logs a new question-answer interaction before a vote is cast."""

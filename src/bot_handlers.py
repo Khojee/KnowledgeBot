@@ -8,62 +8,51 @@ from . import rag_core
 from . import database
 
 # --- Chat History Management ---
-MAX_HISTORY_TURNS = 5 # Keep the last 5 Q&A pairs
-
-def get_contextual_history(chat_id: int) -> list:
-    """Gets and trims the history to a manageable size for context."""
-    history = database.get_chat_history(chat_id)
-    # Keep the last MAX_HISTORY_TURNS * 2 messages (user + bot)
-    return history[-(MAX_HISTORY_TURNS * 2):]
+MAX_HISTORY_TURNS = 5
 
 # --- Telegram Command Handlers ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a welcome message when the /start command is issued."""
     await update.message.reply_text("Hello! I am an AI support bot. How can I help you today?")
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def handle_group_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
-    Handles messages by first classifying intent, then routing to the appropriate logic.
+    Handles the /ask command in group chats.
+    Ignores history and relies on explicit activation.
     """
-    user_message = update.message.text
-    chat_id = update.message.chat_id
-    logging.info(f"Received message from chat_id {chat_id}: {user_message}")
+    # When a command is used, the user's message is in `context.args`
+    if not context.args:
+        # If the user just sends "/ask" with no question, guide them.
+        await update.message.reply_text("Please ask a question after the /ask command. For example: /ask Submit button ishlamayapti")
+        return
 
-    await context.bot.send_chat_action(chat_id=chat_id, action='typing')
+    user_message = " ".join(context.args)
+    chat_id = update.message.chat_id # This will be the group's ID
+    user_id = update.message.from_user.id # We can still log the specific user
     
-    intent = rag_core.classify_intent(user_message)
-    response_text = ""
-    history = get_contextual_history(chat_id)
+    logging.info(f"Received /ask command from user {user_id} in group {chat_id}: {user_message}")
 
     try:
-        if intent == 'Greeting':
-            response_text = "Hello! How can I help you with our internal applications today?"
+        # We don't need to send "typing" in a busy group chat.
         
-        elif intent == 'Gratitude':
-            response_text = "You're welcome! Is there anything else I can help you with?"
-
-        elif intent == 'Question':
-            # This is our original RAG logic
-            logging.info("Intent is 'Question'. Running RAG pipeline...")
-            detected_lang = 'en'
-            try:
-                detected_lang = detect(user_message)
-            except LangDetectException:
-                pass # Default to English
-            
-            relevant_docs = rag_core.get_relevant_documents(user_message)
-            response_text = rag_core.generate_response(
-                question=user_message,
-                relevant_docs=relevant_docs,
-                history=history,
-                lang_code=detected_lang
-            )
+        # --- Simplified RAG Pipeline (No History) ---
+        detected_lang = 'en'
+        try:
+            detected_lang = detect(user_message)
+        except LangDetectException:
+            pass
         
-        else:
-            # Fallback for any other classification
-            response_text = "I'm not sure how to respond to that. Can you please ask me a question about our IT systems?"
+        relevant_docs = rag_core.get_relevant_documents(user_message)
+        
+        # We call generate_response with an EMPTY history list.
+        response_text = rag_core.generate_response(
+            question=user_message,
+            relevant_docs=relevant_docs,
+            history=[], # <-- NO HISTORY
+            lang_code=detected_lang
+        )
 
-        # --- Standard response logic (sending message, buttons, saving history) ---
+        # --- Voting and Reply Logic ---
         interaction_id = str(uuid.uuid4())
         keyboard = [
             [
@@ -71,18 +60,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 InlineKeyboardButton("👎 Not Helpful", callback_data=f"vote:down:{interaction_id}"),
             ]
         ]
-        # Only add buttons if the response was from the RAG pipeline
-        reply_markup = InlineKeyboardMarkup(keyboard) if intent == 'Question' else None
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
-        database.log_interaction(interaction_id, chat_id, user_message, response_text)
-        await update.message.reply_text(response_text, reply_markup=reply_markup)
+        # Log the interaction. We can still log the user ID for analytics.
+        database.log_interaction(interaction_id, user_id, user_message, response_text)
         
-        history.append({'role': 'user', 'parts': [user_message]})
-        history.append({'role': 'model', 'parts': [response_text]})
-        database.save_chat_history(chat_id, history)
+        # IMPORTANT: Use reply_to_message_id to create a threaded reply.
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=response_text,
+            reply_to_message_id=update.message.message_id, # This makes it a reply
+            reply_markup=reply_markup
+        )
 
     except Exception as e:
-        logging.error(f"An error occurred in handle_message: {e}", exc_info=True)
+        logging.error(f"An error occurred in handle_group_ask: {e}", exc_info=True)
+        # Reply to the user's message to notify them of the error
         await update.message.reply_text("Sorry, I encountered an internal error. Please try again.")
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
